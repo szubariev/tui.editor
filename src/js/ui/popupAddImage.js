@@ -7,6 +7,7 @@ import util from 'tui-code-snippet';
 import LayerPopup from './layerpopup';
 import Tab from './tab';
 import i18n from '../i18n';
+import $ from 'jquery';
 
 const CLASS_IMAGE_URL_INPUT = 'te-image-url-input';
 const CLASS_IMAGE_FILE_INPUT = 'te-image-file-input';
@@ -15,6 +16,9 @@ const CLASS_OK_BUTTON = 'te-ok-button';
 const CLASS_CLOSE_BUTTON = 'te-close-button';
 const CLASS_FILE_TYPE = 'te-file-type';
 const CLASS_URL_TYPE = 'te-url-type';
+const CLASS_BROWSE_TYPE = 'te-browse-type';
+const CLASS_BROWSE_SELECTOR = 'te-browse-selector';
+const CLASS_BROWSE_SELECTOR_ACTIVE = 'te-browse-selector-active';
 const CLASS_TAB_SECTION = 'te-tab-section';
 const TYPE_UI = 'ui';
 
@@ -40,6 +44,7 @@ class PopupAddImage extends LayerPopup {
                 <label for="">${i18n.get('Select image file')}</label>
                 <input type="file" class="${CLASS_IMAGE_FILE_INPUT}" accept="image/*" />
             </form>
+            <div class="${CLASS_BROWSE_TYPE}"></div>
             <label for="url">${i18n.get('Description')}</label>
             <input type="text" class="${CLASS_ALT_TEXT_INPUT}" />
             <div class="te-button-section">
@@ -87,16 +92,34 @@ class PopupAddImage extends LayerPopup {
 
     const $fileTypeSection = $popup.find(`.${CLASS_FILE_TYPE}`);
     const $urlTypeSection = $popup.find(`.${CLASS_URL_TYPE}`);
+    let $browseTypeSection = $popup.find(`.${CLASS_BROWSE_TYPE}`);
+    // fill browse section with images
+    const hookCallback = (images) => {
+      if (images.length > 0) {
+        $browseTypeSection.html('');
+        // add images to list
+        images.forEach((image) => {
+          $browseTypeSection.append(`<img src="${image.thumb}" class="${CLASS_BROWSE_SELECTOR}" data-url="${image.url}" data-text="${image.text}"/>`);
+        });
+      } else {
+        $browseTypeSection.html('<span>Images will be available here after upload.</span>');
+      }
+    };
+
+    this.eventManager.emit('getImagesToBrowseHook', hookCallback, TYPE_UI);
+
     const $tabSection = this.$body.find(`.${CLASS_TAB_SECTION}`);
     this.tab = new Tab({
       initName: i18n.get('File'),
       items: [
         i18n.get('File'),
-        i18n.get('URL')
+        i18n.get('URL'),
+        'Browse'
       ],
       sections: [
         $fileTypeSection,
-        $urlTypeSection
+        $urlTypeSection,
+        $browseTypeSection
       ]
     });
     $tabSection.append(this.tab.$el);
@@ -117,6 +140,13 @@ class PopupAddImage extends LayerPopup {
     this.on(`change .${CLASS_IMAGE_FILE_INPUT}`, () => {
       const filename = this._$imageFileInput.val().split('\\').pop();
       this._$altTextInput.val(filename);
+    });
+
+    this.on(`click .${CLASS_BROWSE_SELECTOR}`, (ev) => {
+      $(ev.target).siblings().removeClass(`${CLASS_BROWSE_SELECTOR_ACTIVE}`);
+      $(ev.target).addClass(`${CLASS_BROWSE_SELECTOR_ACTIVE}`);
+      this._$imageUrlInput.val(ev.target.getAttribute('data-url'));
+      this._$altTextInput.val(ev.target.getAttribute('data-text'));
     });
 
     this.on(`click .${CLASS_CLOSE_BUTTON}`, () => this.hide());
@@ -167,6 +197,7 @@ class PopupAddImage extends LayerPopup {
 
   _resetInputs() {
     this.$el.find('input').val('');
+    this.$el.find(`.${CLASS_BROWSE_SELECTOR}`).removeClass(`${CLASS_BROWSE_SELECTOR_ACTIVE}`);
   }
 }
 
