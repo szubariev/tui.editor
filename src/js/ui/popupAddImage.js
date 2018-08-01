@@ -92,21 +92,9 @@ class PopupAddImage extends LayerPopup {
 
     const $fileTypeSection = $popup.find(`.${CLASS_FILE_TYPE}`);
     const $urlTypeSection = $popup.find(`.${CLASS_URL_TYPE}`);
-    let $browseTypeSection = $popup.find(`.${CLASS_BROWSE_TYPE}`);
-    // fill browse section with images
-    const hookCallback = (images) => {
-      if (images.length > 0) {
-        $browseTypeSection.html('');
-        // add images to list
-        images.forEach((image) => {
-          $browseTypeSection.append(`<img src="${image.thumb}" class="${CLASS_BROWSE_SELECTOR}" data-url="${image.url}" data-text="${image.text}"/>`);
-        });
-      } else {
-        $browseTypeSection.html('<span>Images will be available here after upload.</span>');
-      }
-    };
+    const $browseTypeSection = $popup.find(`.${CLASS_BROWSE_TYPE}`);
 
-    this.eventManager.emit('getImagesToBrowseHook', hookCallback, TYPE_UI);
+    this._updateBrowseSectionContent();
 
     const $tabSection = this.$body.find(`.${CLASS_TAB_SECTION}`);
     this.tab = new Tab({
@@ -158,7 +146,10 @@ class PopupAddImage extends LayerPopup {
         this._applyImage(imageUrl, altText);
       } else {
         const imageFile = this._$imageFileInput.get(0).files.item(0);
-        const hookCallback = (url, text) => this._applyImage(url, altText || text);
+        const hookCallback = (url, text) => {
+          this._applyImage(url, altText || text);
+          this._updateBrowseSectionContent();
+        };
 
         this.eventManager.emit('addImageBlobHook', imageFile, hookCallback, TYPE_UI);
       }
@@ -198,6 +189,26 @@ class PopupAddImage extends LayerPopup {
   _resetInputs() {
     this.$el.find('input').val('');
     this.$el.find(`.${CLASS_BROWSE_SELECTOR}`).removeClass(`${CLASS_BROWSE_SELECTOR_ACTIVE}`);
+  }
+
+  _updateBrowseSectionContent() {
+    const $popup = this.$el;
+
+    let $browseTypeSection = $popup.find(`.${CLASS_BROWSE_TYPE}`);
+    // fill browse section with images
+    const hookCallback = (images) => {
+      if (images.length > 0) {
+        $browseTypeSection.html('');
+        // add images to list
+        images.forEach((image) => {
+          $browseTypeSection.append(`<img src="${image.thumb}" class="${CLASS_BROWSE_SELECTOR}" data-url="${image.url}" data-text="${image.text}"/>`);
+        });
+      } else {
+        $browseTypeSection.html('<span>Images will be available here after upload.</span>');
+      }
+    };
+
+    this.eventManager.emit('getImagesToBrowseHook', hookCallback, TYPE_UI);
   }
 }
 
